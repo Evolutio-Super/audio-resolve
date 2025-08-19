@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim
 
 # Install system dependencies (yt-dlp needs ffmpeg)
 RUN apt-get update && apt-get install -y \
@@ -23,12 +24,16 @@ COPY app.py .
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Expose port (Railway will set PORT env var)
+# Expose port
 EXPOSE 8080
 
-# Health check with dynamic port
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD sh -c "curl -f http://localhost:\${PORT:-8080}/health || exit 1"
+# Create startup script to handle environment variables properly
+RUN echo '#!/bin/sh\nPORT=${PORT:-8080}\nexec uvicorn app:app --host 0.0.0.0 --port $PORT' > /app/start.sh && \
+    chmod +x /app/start.sh
 
-# Run the application with Railway's PORT env var
-CMD sh -c "uvicorn app:app --host 0.0.0.0 --port \${PORT:-8080}"
+# Health check with proper environment variable handling
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+# Use the startup script
+CMD ["/app/start.sh"]

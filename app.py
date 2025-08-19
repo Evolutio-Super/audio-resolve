@@ -153,8 +153,8 @@ async def root():
         "service": "Audio URL Resolver",
         "version": "1.0.0",
         "endpoints": {
-            "POST /resolve": "Resolve YouTube URL to audio stream",
-            "GET /healthz": "Health check"
+            "POST /extract": "Extract YouTube URL to audio stream",
+            "GET /health": "Health check"
         },
         "auth": "Bearer token required"
     }

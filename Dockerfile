@@ -1,8 +1,9 @@
 FROM python:3.12-slim
 
-# Install system dependencies
+# Install system dependencies (yt-dlp needs ffmpeg)
 RUN apt-get update && apt-get install -y \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -22,12 +23,12 @@ COPY app.py .
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
+# Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
-# Health check
+# Health check with dynamic port
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD sh -c "curl -f http://localhost:\${PORT:-8080}/health || exit 1"
 
-# Run the application
-CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}
+# Run the application with Railway's PORT env var
+CMD sh -c "uvicorn app:app --host 0.0.0.0 --port \${PORT:-8080}"
